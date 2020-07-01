@@ -1,0 +1,98 @@
+{
+  "Name": "Adam's Bus",
+  "cameras": [
+    {
+      "Name": "FRONT_OUT",
+      "IPAddress": 0,
+      "Port": 6969,
+      "Username": "ADMIN",
+      "Password": "GHGBKUYGSVDYS"
+    },
+    {
+      "Name": "LEFT_OUT",
+      "IPAddress": 0,
+      "Port": 6969,
+      "Username": "ADMIN",
+      "Password": "GHGBKUYGSVDYS"
+    },
+    {
+      "Name": "LOWER_SALOON",
+      "IPAddress": 0,
+      "Port": 6969,
+      "Username": "ADMIN",
+      "Password": "GHGBKUYGSVDYS"
+    },
+    {
+      "Name": "REAR_OUT",
+      "IPAddress": 0,
+      "Port": 6969,
+      "Username": "ADMIN",
+      "Password": "GHGBKUYGSVDYS"
+    },
+    {
+      "Name": "RIGHT_OUT",
+      "IPAddress": 0,
+      "Port": 6969,
+      "Username": "ADMIN",
+      "Password": "GHGBKUYGSVDYS"
+    },
+    {
+      "Name": "UPPER_SALOON",
+      "IPAddress": 0,
+      "Port": 6969,
+      "Username": "ADMIN",
+      "Password": "GHGBKUYGSVDYS"
+    }
+  ],
+  "CCTVEnabled": true,
+  "CCTVPaths": [
+    { "Drive": "C:\\", "Folder": "CCTV_PRIMARY", "Monitor": true },
+    { "Drive": "D:\\", "Folder": "CCTV_BACKUP", "Monitor": true },
+    { "Drive": "E:\\", "Folder": "CCTV_BACKUP", "Monitor": true }
+  ],
+  "DoorCode": 2326,
+  "doors": [
+    {
+      "Name": "FRONT",
+      "RemoteOperation": true,
+      "State": 2
+    },
+    {
+      "Name": "EMERGENCY",
+      "RemoteOperation": false,
+      "State": 2
+    },
+    {
+      "Name": "REAR",
+      "RemoteOperation": true,
+      "State": 2
+    }
+  ],
+  "Height": 180,
+  "Registration": "PN17 VAO",
+  "sensors": [
+    { "name": "HEIGHT_COL",
+      "FriendlyName": "Height Collision Sensor",
+      "state": 0
+    }
+  ],
+  "TrackerAPIKey": "",
+  "Weight": 12000,
+  "windows": [
+    {
+      "Name": "DRIVER",
+      "FriendlyName": "Driver's window",
+      "State": 1
+    },
+    {
+      "Name": "EMERGENCY_L",
+      "FriendlyName": "Lower Emergency",
+      "State": 1
+    },
+    {
+      "Name": "EMERGENCY_U",
+      "FriendlyName": "Upper Emergency",
+      "State": 2
+    }
+  ]
+}
