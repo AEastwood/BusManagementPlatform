@@ -17,7 +17,7 @@ namespace Bus.Functions
         {
             LoadConfiguration();
             Console.Title = string.Format("{0}, CheckDelay: {1}s", Bus.Model.ToString(), Bus.checkDelay);
-            
+
             BusCCTV.Start();
             BusLogger.Start();
             BusTracker.Start();
@@ -25,7 +25,7 @@ namespace Bus.Functions
 
             while (validConfig)
             {
-                ConsoleOutput(Bus.Model);
+                ConsoleOutput();
                 Thread.Sleep(Bus.checkDelay * 1000);
             }
         }
@@ -49,11 +49,8 @@ namespace Bus.Functions
                 catch (Exception e)
                 {
                     Console.WriteLine(ConsoleFunctions.WriteWithColour(ConsoleColor.Red, "INVALID CONFIGURATION FILE"));
-
                     BusLogger.LogException(e);
-
                     validConfig = false;
-                    Console.Read();
                 }
                 finally
                 {
@@ -61,29 +58,21 @@ namespace Bus.Functions
                 }
             }
 
-            BusCCTV.SetCCTVStorageCalculations();
-
+            BusCCTV.CheckHDDUsage();
+            BusCCTV.CheckDriveHealth();
         }
 
-        public static bool ReloadBusConfiguration()
-        {
-            validConfig = false;
-            Bus.Model = null;
-            StartBackend();
-            return true;
-        }
-
-        public static void ConsoleOutput(BusConfig bus)
+        public static void ConsoleOutput()
         {
             Console.CursorVisible = false;
             Console.SetCursorPosition(0, 0);
 
-            Console.WriteLine("Current Bus: {0}", (string.IsNullOrEmpty(bus.Name)) ? "NO_NAME" : bus.Name + Environment.NewLine);
-            Console.WriteLine("Security Status: {0} Cameras, {1} Sensors", bus.Cameras.Count, (bus.Doors.Count + bus.Windows.Count + bus.Sensors.Count));
+            Console.WriteLine("Current Bus: {0}", (string.IsNullOrEmpty(Bus.Model.Name)) ? "NO_NAME" : Bus.Model.Name + Environment.NewLine);
+            Console.WriteLine("Security Status: {0} Cameras, {1} Sensors", Bus.Model.Cameras.Count, (Bus.Model.Doors.Count + Bus.Model.Windows.Count + Bus.Model.Sensors.Count));
             Console.WriteLine("--------------------------------------");
             Console.WriteLine("Type    | Name         |  Status");
 
-            SensorFunctions.SensorCheck(bus);
+            SensorFunctions.SensorCheck();
         }
 
 

@@ -1,8 +1,9 @@
-﻿using Bus.WebInterface;
+﻿using Bus.Commands;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Bus.Logger
 {
@@ -21,46 +22,54 @@ namespace Bus.Logger
             { "WebInterface", string.Format("{0}", Assembly.GetEntryAssembly().Location.Replace("Bus.exe", $"logs\\WebInterfaceLog-{date}.{fileType}")) }
         };
 
-        private static void CommitCommandLogToFile()
+        private static void CommitCommandLogToFile(Command command)
         {
+            LogFiles["WebInterface"] = Assembly.GetEntryAssembly().Location.Replace("Bus.exe", $"logs\\WebInterfaceLog-{date}.{fileType}");
 
-            TextWriter LogWriter = new StreamWriter(LogFiles["WebInterface"]);
-
-            foreach (var logEntry in CommandLog)
-                LogWriter.WriteLine("Time: {0}    Command: {1}    Auth_Key: {2}", DateTime.Now.ToString(), logEntry.CommandName, logEntry.Token);
-
-            LogWriter.Close();
-
+            try
+            {
+                TextWriter LogWriter = new StreamWriter(LogFiles["WebInterface"], append: true);
+                LogWriter.WriteLine("Time: {0}    Command: {1}    Auth_Key: {2}", DateTime.Now.ToString(), command.CommandName, command.Token);
+                LogWriter.Close();
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
         }
 
-        private static void CommitExceptionLogToFile()
+        private static void CommitExceptionLogToFile(Exception exception)
         {
+            LogFiles["Exceptions"] = Assembly.GetEntryAssembly().Location.Replace("Bus.exe", $"logs\\Exceptions-{date}.{fileType}");
 
-            TextWriter LogWriter = new StreamWriter(LogFiles["Exceptions"]);
-
-            foreach (var logEntry in ExceptionLog)
-                LogWriter.WriteLine("Time: {0}    Exception: {1}", DateTime.Now.ToString(), logEntry.Message);
-
-            LogWriter.Close();
+            try
+            {
+                TextWriter LogWriter = new StreamWriter(LogFiles["Exceptions"], append: true);
+                LogWriter.WriteLine("Time: {0}    Exception: {1}", DateTime.Now.ToString(), exception.Message);
+                LogWriter.Close();
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
 
         }
 
         public static void LogWebInterfaceCommand(Command command)
         {
-            if (string.IsNullOrEmpty(command.CommandName))
-                return;
-
-            if (!command.Logged)
+            if (!command.Logged || string.IsNullOrEmpty(command.CommandName))
                 return;
 
             CommandLog.Add(command);
-            CommitCommandLogToFile();
+            CommitCommandLogToFile(command);
         }
 
-        public static void LogException(Exception e)
+        public static void LogException(Exception e, [CallerMemberName] string callerName = "")
         {
             ExceptionLog.Add(e);
-            CommitExceptionLogToFile();
+
+            if(callerName != "CommitExceptionLogToFile")
+                CommitExceptionLogToFile(e);
         }
 
         public static void Start()

@@ -5,56 +5,57 @@ namespace Bus.Sensors
     class SensorFunctions
     {
         private static readonly string TableHeader = "--------------------------------------";
-        public static void SensorCheck(BusConfig bus)
+        public static void SensorCheck()
         {
             Console.WriteLine(TableHeader);
-            CheckCameras(bus);
+            CheckCameras();
             Console.WriteLine(TableHeader);
-            CheckDoors(bus);
+            CheckDoors();
             Console.WriteLine(TableHeader);
-            CheckSensors(bus);
+            CheckSensors();
             Console.WriteLine(TableHeader);
-            CheckWindows(bus);
+            CheckWindows();
             Console.WriteLine(TableHeader);
         }
 
         private static readonly string[] cameraStatuses = { "UNKNOWN", "RECORDING", "IDLE        ", "INITIALISING" };
         private static readonly string[] openingStatuses = { "UNKNOWN", "OPEN   ", "CLOSED" };
 
-        private static void CheckCameras(BusConfig bus)
+        private static void CheckCameras()
         {
-            foreach (Camera camera in bus.Cameras)
+            Bus.Model.Cameras.ForEach(camera =>
             {
                 Console.Write(string.Format("{0, -3} | {1,-12} |  ", ConsoleFunctions.WriteWithColour(ConsoleColor.Cyan, "CCTV"), camera.Name));
                 ConsoleFunctions.WriteWithColour(StateColour(camera.State), $"{cameraStatuses[camera.State]}\n");
-            }
+            });
         }
 
-        private static void CheckDoors(BusConfig bus)
+        private static void CheckDoors()
         {
-            foreach (Door door in bus.Doors)
+            Bus.Model.Doors.ForEach(door =>
             {
                 Console.Write(string.Format("{0, -3} | {1,-12} |  ", ConsoleFunctions.WriteWithColour(ConsoleColor.Cyan, "Door"), door.Name));
                 ConsoleFunctions.WriteWithColour(StateColour(door.State), $"{openingStatuses[door.State]}\n");
-            }
+            });
+
         }
 
-        private static void CheckSensors(BusConfig bus)
+        private static void CheckSensors()
         {
-            foreach (Sensor sensor in bus.Sensors)
+            Bus.Model.Sensors.ForEach(sensor =>
             {
                 Console.Write(string.Format("{0, -1} | {1,-12} |  ", ConsoleFunctions.WriteWithColour(ConsoleColor.Cyan, "Sensor"), sensor.Name));
                 ConsoleFunctions.WriteWithColour(StateColour(sensor.State), $"{openingStatuses[sensor.State]}\n");
-            }
+            });
         }
 
-        private static void CheckWindows(BusConfig bus)
+        private static void CheckWindows()
         {
-            foreach (Window window in bus.Windows)
+            Bus.Model.Windows.ForEach(window =>
             {
                 Console.Write(string.Format("{0, -1} | {1,-12} |  ", ConsoleFunctions.WriteWithColour(ConsoleColor.Cyan, "Window"), window.Name));
                 ConsoleFunctions.WriteWithColour(StateColour(window.State), $"{openingStatuses[window.State]}\n");
-            }
+            });
         }
 
         private static ConsoleColor StateColour(int state)
