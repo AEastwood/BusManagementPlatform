@@ -1,10 +1,16 @@
 var BUS_DATA = null;
 var ERROR_MESSAGE = "Unable to Connect";
 var LOG = null;
+var NOTIFICATIONS = null;
+var STATUS = null;
+var STATUS_TIMEOUT = null;
 var PORT = 9287;
 
 const cameraStatus = ['Unknown', 'Recording', 'Idle', 'Initialising'];
 const cameraStatusBG = ['secondary', 'danger', 'info', 'dark'];
+const notificationStatusBG = ['', 'success', 'warning', 'danger'];
+
+const displayWindows = ['.bigCamera', '.cameras', '.dataTables_length', '.log', '.mainDashboard'];
 
 $(document).ready(function () {
     SendCommand({ CommandName: 'initial_load', "Token": AUTH_KEY });
@@ -15,7 +21,7 @@ function BigCamera(camera, state, source) {
     $('.bigCamera').html(`<div class="card"><div class="card-header text-white bg-${cameraStatusBG[state]}">${camera} (${cameraStatus[state]})</div>
     <div class="card-body"><video width="100%" height="762px" controls autoplay muted><source src="${source}" type="video/mp4">Your browser does not support the video tag.</video></div></div>`);
 
-    Display(['.log', '.cameras'], '.bigCamera');
+    Display(displayWindows, '.bigCamera');
 }
 
 function Display(hide, show) {
@@ -50,29 +56,28 @@ async function LoadUI() {
     $(".controls tr").remove();
     $(".windows tr").remove();
 
-    // Camera Controls
     var cameraIcons = ``;
     var cameraStorage = ``;
-    for (var i = 0; i < BUS_DATA.CCTVPaths.length; i++) {
+    var cameraStorageFree = 0;
 
-        if (!BUS_DATA.CCTVPaths[i].Monitor)
+    for (var i = 0; i < BUS_DATA.CCTVDrives.length; i++) {
+
+        if (!BUS_DATA.CCTVDrives[i].Monitor)
             continue;
 
-        var cameraStorageFree = 0;
 
-        if (BUS_DATA.CCTVPaths[i].Used >= 0 && BUS_DATA.CCTVPaths[i].Used < 33)
+        if (BUS_DATA.CCTVDrives[i].Used >= 0 && BUS_DATA.CCTVDrives[i].Used < 50)
             cameraStorageFree = cameraStorageBG[0];
 
-        if (BUS_DATA.CCTVPaths[i].Used >= 33 && BUS_DATA.CCTVPaths[i].Used < 66)
+        if (BUS_DATA.CCTVDrives[i].Used >= 50 && BUS_DATA.CCTVDrives[i].Used < 90)
             cameraStorageFree = cameraStorageBG[1];
 
-        if (BUS_DATA.CCTVPaths[i].Used >= 66)
+        if (BUS_DATA.CCTVDrives[i].Used >= 90)
             cameraStorageFree = cameraStorageBG[2];
 
-
-        cameraStorage += `<div class="col-sm-5"><pre class="row h-100 justify-content-left align-items-center pl-3">${BUS_DATA.CCTVPaths[i].Drive}${BUS_DATA.CCTVPaths[i].Folder} (${BUS_DATA.CCTVPaths[i].Used}%)</pre></div>
+        cameraStorage += `<div class="col-sm-5"><pre class="row h-100 justify-content-left align-items-center pl-3">${BUS_DATA.CCTVDrives[i].DriveLetter}${BUS_DATA.CCTVDrives[i].Folder} (${BUS_DATA.CCTVDrives[i].Used}%)</pre></div>
         <div class="col-sm-7"><p><div class="progress">
-        <div class="progress-bar bg-${cameraStorageFree}" role="progressbar" style="width: ${BUS_DATA.CCTVPaths[i].Used}%" aria-valuenow="${BUS_DATA.CCTVPaths[i].Used}" aria-valuemin="0" aria-valuemax="100"></div></div></p></div>`;
+        <div class="progress-bar bg-${cameraStorageFree}" role="progressbar" style="width: ${BUS_DATA.CCTVDrives[i].Used}%" aria-valuenow="${BUS_DATA.CCTVDrives[i].Used}" aria-valuemin="0" aria-valuemax="100"></div></div></p></div>`;
     }
     $('.cameraStorage').html(cameraStorage);
 
@@ -120,15 +125,25 @@ async function LoadUI() {
                     <div class="col-sm-5"><p class="h-100 text-center align-items-center pl-3">${windowStates[BUS_DATA.Windows[i].State]}</p></div> `;
     }
     $('.windows').html(windowData);
-    Display(['.invalid', '.loader'], '.wrapper');
+    Display(['.loader'], '.wrapper');
+
+}
+
+function LoadStatus(){
+    SendCommand({ CommandName: "get_notifications", Logged: false, "Token": AUTH_KEY });
+}
+
+function NotificationRead(id){
+    SendCommand({ CommandName: 'mark_read', CommandParamaters: [id], "Token": AUTH_KEY });
 }
 
 function Reload() {
-    Display(['.bigCamera', '.log'], '.cameras');
+    Display(displayWindows, '.cameras');
+
     SendCommand({ CommandName: 'reload_config', "Token": AUTH_KEY });
 }
 
-async function SendCommand(command) {
+function SendCommand(command) {
     var commandSocket = new WebSocket(`wss://localhost:${PORT}`);
 
     commandSocket.onopen = function () {
@@ -138,38 +153,50 @@ async function SendCommand(command) {
     commandSocket.onmessage = function (event) {
         var response = JSON.parse(event.data);
 
-        if (response['errorMessage'] !== undefined) {
+        if (response['error_message'] !== undefined) {
             ERROR_MESSAGE = response.errorMessage;
             $('.invalid').text(ERROR_MESSAGE);
-            Display(['.wrapper', '.loader'], '.invalid');
+            Display(displayWindows, '.invalid');
             return;
         }
 
+        commandSocket.close();
         SendCommand_callback(response);
     };
 
     commandSocket.onerror = function () {
-        $('.invalid').text(ERROR_MESSAGE);
-        Display(['.wrapper'], '.invalid');
-        setTimeout(() => { window.location.reload(); }, 1000);
+        commandSocket.close();
     };
 }
 
 async function SendCommand_callback(data) {
 
-    var response = { Callback: data.Callback, Data: data.Data };
+    console.table(data);
 
-    switch (response.Callback) {
+    var response = { Command: data.Command, Data: data.Data };
+
+    switch (response.Command) {
 
         case "get_command_log":
             LOG = response.Data;
             ShowLog();
             return;
 
+        case "get_notifications":
+            NOTIFICATIONS = response.Data;
+            UpdateStatus();
+            return;
+
+        case "get_status":
+            STATUS = response.Data;
+            UpdateStatus();
+            return;
+
         case "initial_load":
             BUS_DATA = response.Data;
             await LoadUI().then(function () {
                 LoadDoors();
+                LoadStatus();
             });
             return;
 
@@ -177,6 +204,7 @@ async function SendCommand_callback(data) {
             BUS_DATA = response.Data;
             await LoadUI().then(function () {
                 LoadDoors();
+                LoadStatus();
             });
             return;
 
@@ -201,28 +229,48 @@ function ShowLog() {
 
     $('.logEntries').DataTable({ searching: false, iDisplayLength: 19 });
 
-    Display(['.bigCamera', '.cameras', '.dataTables_length'], '.log');
+    Display(displayWindows, '.log');
 }
 
 function ToggleDoor(name) {
     SendCommand({ "CommandName": "toggle_door", "CommandParamaters": [name], "Token": AUTH_KEY });
 }
 
+function ToggleMenu(){
+
+
+    Display(displayWindows, '.mainDashboard');
+}
+
+function UpdateStatus(){
+    $('.systemStatus').html(STATUS);
+    $(".notificationsTable tr").remove();
+
+    NOTIFICATIONS.forEach(notification => {
+        $('.notificationsTable').append(`<tr><td align="left" style="width: 20%;" class="${notificationStatusBG[notification.Priority]}">${notification.Name}</td><td align="left">${notification.Contents}</td><td align="right" style="width:5%;"><a href="#" onclick="NotificationRead(${notification.Id});"><i class="fas fa-trash text-dark h5"></i></a></td></tr>`);
+    });
+
+    let unread = 0;
+    NOTIFICATIONS.forEach(notification => {
+        if(notification.Read === false){
+            unread++;
+        }
+    });
+
+    if(unread > 0)
+        $('.systemStatus').html(`<b>Hey</b>, You have ${unread} unread notification(s)!`);
+    else
+        $('.systemStatus').html(`<span class="text-success">The system is running perfectly!</span>`);
+}
+
 function UpdateTime() {
-    var today = new Date(),
-        h = today.getHours(),
-        m = today.getMinutes(),
-        s = today.getSeconds();
+    var today = new Date(), h = today.getHours(), m = today.getMinutes(), s = today.getSeconds();
 
     h = (h < 10) ? `0${h}` : h;
     m = (m < 10) ? `0${m}` : m;
     s = (s < 10) ? `0${s}` : s;
 
-    var time = `${h}:${m}:${s}`;
+    $('.time').html(`${h}:${m}:${s}  <i class="pl-2 fas fa-clock"></i>`);
 
-    $('.time').html(`${time}  <i class="fas fa-clock"></i>`);
-
-    t = setTimeout(function () {
-        UpdateTime()
-    }, 500);
+    t = setTimeout(function () { UpdateTime() }, 500);
 }
